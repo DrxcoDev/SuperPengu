@@ -1,15 +1,20 @@
 defmodule SuperPengu do
   use Bitwise  # IMPORTANTE: Se añade para usar operadores bitwise
+  alias AsmComp  # Añadido para usar el módulo AsmComp
 
   def main(args) do
     case args do
       ["--cross", arch, file] -> compile(file, arch)
+      ["--asm", file] -> generate_asm(file)  # Nueva opción para generar código ensamblador
+      ["--compile-asm", file] -> compile_asm(file)  # Nueva opción para compilar ensamblador
       [file] -> compile(file)
       _ ->
         IO.puts("""
         ❌ Uso incorrecto. Usa:
           ./superpengu archivo.c      # Compila un archivo normal
           ./superpengu --cross x86_64 archivo.c  # Compila en modo cruzado
+          ./superpengu --asm archivo.c  # Genera código ensamblador
+          ./superpengu --compile-asm archivo.s  # Compila código ensamblador
         """)
     end
   end
@@ -38,6 +43,36 @@ defmodule SuperPengu do
     else
       IO.puts("\n❌ Error: El archivo #{file} no existe.")
     end
+  end
+
+  defp generate_asm(file) do
+    if File.exists?(file) do
+      IO.puts("\n🔌 Ejecutando plugins (before)...")
+      run_plugins()
+
+      compiler = detect_compiler(file)
+      output = Path.rootname(file) <> ".s"  # El archivo de ensamblador tendrá la extensión .s
+      
+      args = ["-O3", "-S", "-o", output, file]  # Usamos el flag -S para generar ensamblador
+      {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
+
+      IO.puts(result)
+      
+      if status == 0 do
+        IO.puts("\n✅ Código ensamblador generado: #{output}")
+      else
+        IO.puts("\n❌ Error generando código ensamblador")
+      end
+
+      IO.puts("\n🔌 Ejecutando plugins (after)...")
+      run_plugins()
+    else
+      IO.puts("\n❌ Error: El archivo #{file} no existe.")
+    end
+  end
+
+  defp compile_asm(file) do
+    AsmComp.compile_asm(file)  # Llamamos a la función del módulo AsmComp
   end
 
   defp detect_compiler(file) do
