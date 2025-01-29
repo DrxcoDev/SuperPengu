@@ -1,71 +1,81 @@
 defmodule SuperPengu do
+  use Bitwise  # IMPORTANTE: Se añade para usar operadores bitwise
+
   def main(args) do
     case args do
-      [file] -> 
-        compile(file, [])
-      ["--cross", target | opts] ->
-        compile_cross(target, opts)
+      ["--cross", arch, file] -> compile(file, arch)
+      [file] -> compile(file)
       _ ->
-        IO.puts("Uso: ./superpengu archivo.c o ./superpengu --cross <target> archivo.c")
+        IO.puts("""
+        ❌ Uso incorrecto. Usa:
+          ./superpengu archivo.c      # Compila un archivo normal
+          ./superpengu --cross x86_64 archivo.c  # Compila en modo cruzado
+        """)
     end
   end
 
-  # Compilación normal
-  defp compile(file, opts) do
-    IO.puts("Compilando archivo: #{file}")  # Mostrar el archivo
-    IO.inspect(opts, label: "Opciones")
-
+  defp compile(file, arch \\ "native") do
     if File.exists?(file) do
-      extension = Path.extname(file)
-      compiler = case extension do
-        ".c" -> "gcc"
-        ".cpp" -> "g++"
-        ".lgx" -> "Pengu"  # Usar Pengu para archivos .lgx
-        _ -> nil
+      IO.puts("\n🔌 Ejecutando plugins (before)...")
+      run_plugins()
+
+      compiler = detect_compiler(file)
+      output = Path.rootname(file) <> ".out"
+      
+      args = if arch == "native", do: ["-O3", "-march=native", "-o", output, file], else: ["-O3", "-o", output, file]
+      {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
+
+      IO.puts(result)
+      
+      if status == 0 do
+        IO.puts("\n✅ Compilación exitosa: #{output}")
+      else
+        IO.puts("\n❌ Error en la compilación")
       end
 
-      if compiler do
-        output = Path.basename(file, Path.extname(file)) <> ".out"
-        IO.puts("Usando el compilador: #{compiler}")
-        IO.puts("Comando: #{compiler} -O3 -march=native -o #{output} #{file} #{opts}")
-        
-        # Pasando correctamente los argumentos al compilador
-        {result, 0} = System.cmd(compiler, ["-O3", "-march=native", "-o", output] ++ opts ++ [file])
-        IO.puts(result)
-        IO.puts("Compilación exitosa: #{output}")
-      else
-        IO.puts("Formato no soportado")
-      end
+      IO.puts("\n🔌 Ejecutando plugins (after)...")
+      run_plugins()
     else
-      IO.puts("Error: Archivo no encontrado")
+      IO.puts("\n❌ Error: El archivo #{file} no existe.")
     end
   end
 
-  # Compilación cruzada
-  defp compile_cross(target, [file | opts]) do
-    IO.puts("Compilando: #{file}")  # Mostrar el archivo
-
-    if File.exists?(file) do
-      compiler = get_cross_compiler(target)
-      if compiler do
-        output = Path.basename(file, Path.extname(file)) <> ".out"
-        IO.puts("Usando el compilador cruzado: #{compiler}")
-        IO.puts("Comando: #{compiler} -O3 -march=native -o #{output} #{file} #{opts}")
-        
-        {result, 0} = System.cmd(compiler, ["-O3", "-march=native", "-o", output] ++ opts ++ [file])
-        IO.puts(result)
-        IO.puts("Compilación cruzada exitosa para #{target}: #{output}")
-      else
-        IO.puts("Error: Compilador cruzado para #{target} no soportado.")
-      end
-    else
-      IO.puts("Error: El archivo #{file} no existe.")
+  defp detect_compiler(file) do
+    case Path.extname(file) do
+      ".c" -> "gcc"
+      ".cpp" -> "g++"
+      ".lgx" -> "./compilers/lgx_compiler"  # Llamaría a tu compilador de LGX
+      _ -> "gcc"
     end
   end
 
-  # Obtener el compilador cruzado según el target
-  defp get_cross_compiler("x86_64"), do: "x86_64-linux-gnu-gcc"
-  defp get_cross_compiler("arm"), do: "arm-linux-gnueabi-gcc"
-  defp get_cross_compiler(_), do: nil
-end 
+  defp run_plugins() do
+    plugins_path = "plugins/"
 
+    if File.exists?(plugins_path) do
+      plugins = File.ls!(plugins_path)
+      |> Enum.filter(fn file ->
+        case File.stat(plugins_path <> file) do
+          {:ok, %File.Stat{mode: mode}} -> Bitwise.band(mode, 0o111) != 0
+          _ -> false
+        end
+      end)
+
+      Enum.each(plugins, fn plugin ->
+        path = Path.join(plugins_path, plugin)
+
+        if File.exists?(path) do
+          IO.puts("🔹 Ejecutando #{plugin}...")
+          {result, status} = System.cmd(path, [], stderr_to_stdout: true)
+
+          IO.puts(result)
+          if status != 0, do: IO.puts("⚠️ Advertencia: #{plugin} terminó con errores.")
+        else
+          IO.puts("⚠️ Plugin no encontrado: #{plugin}")
+        end
+      end)
+    else
+      IO.puts("⚠️ No se encontró la carpeta de plugins.")
+    end
+  end
+end
