@@ -6,12 +6,12 @@ defmodule AsmComp do
 
       assembler = detect_assembler(file)
       output = Path.rootname(file) <> ".out"
-      
+
       args = ["-o", output, file]  # Usamos el flag -o para generar el archivo ejecutable
       {result, status} = System.cmd(assembler, args, stderr_to_stdout: true)
 
       IO.puts(result)
-      
+
       if status == 0 do
         IO.puts("\n✅ Compilación exitosa: #{output}")
       else
@@ -63,4 +63,3 @@ defmodule AsmComp do
     end
   end
 end
-

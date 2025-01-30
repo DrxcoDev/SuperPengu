@@ -1,12 +1,14 @@
 defmodule SuperPengu do
   use Bitwise  # IMPORTANTE: Se añade para usar operadores bitwise
   alias AsmComp  # Añadido para usar el módulo AsmComp
+  alias PytComp # Añadido para usar el modulo PytComp
 
   def main(args) do
     case args do
       ["--cross", arch, file] -> compile(file, arch)
       ["--asm", file] -> generate_asm(file)  # Nueva opción para generar código ensamblador
-      ["--compile-asm", file] -> compile_asm(file)  # Nueva opción para compilar ensamblador
+      ["--c-", "-a", file] -> compile_asm(file)  # Nueva opción para compilar ensamblador
+      ["--c", "-py", file] -> compile_pyt(file)
       [file] -> compile(file)
       _ ->
         IO.puts("""
@@ -26,12 +28,12 @@ defmodule SuperPengu do
 
       compiler = detect_compiler(file)
       output = Path.rootname(file) <> ".out"
-      
+
       args = if arch == "native", do: ["-O3", "-march=native", "-o", output, file], else: ["-O3", "-o", output, file]
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
 
       IO.puts(result)
-      
+
       if status == 0 do
         IO.puts("\n✅ Compilación exitosa: #{output}")
       else
@@ -52,12 +54,12 @@ defmodule SuperPengu do
 
       compiler = detect_compiler(file)
       output = Path.rootname(file) <> ".s"  # El archivo de ensamblador tendrá la extensión .s
-      
+
       args = ["-O3", "-S", "-o", output, file]  # Usamos el flag -S para generar ensamblador
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
 
       IO.puts(result)
-      
+
       if status == 0 do
         IO.puts("\n✅ Código ensamblador generado: #{output}")
       else
@@ -73,6 +75,9 @@ defmodule SuperPengu do
 
   defp compile_asm(file) do
     AsmComp.compile_asm(file)  # Llamamos a la función del módulo AsmComp
+  end
+  defp compile_pyt(file) do
+    PytComp.compile_pyt(file)  # Llamamos a la función del módulo AsmComp
   end
 
   defp detect_compiler(file) do
