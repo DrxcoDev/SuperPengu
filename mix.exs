@@ -19,7 +19,9 @@ defmodule SuperPengu.MixProject do
   end
 
   defp deps do
-    []
+    [
+      {:comeonin, "~> 5.3"},
+      {:bcrypt_elixir, "~> 2.0"}
+    ]
   end
 end
-

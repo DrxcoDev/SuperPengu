@@ -23,3 +23,5 @@ superpengu-*.tar
 /tmp/
 
 .out
+
+.lock
