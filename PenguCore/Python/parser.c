@@ -18,7 +18,7 @@ typedef struct {
     char value[MAX_TOKEN_SIZE];
 } Token;
 
-// Parsear el c�digo (en este caso, solo funciones simples)
+
 void parse(Token *tokens, int token_count) {
     for (int i = 0; i < token_count; i++) {
         if (tokens[i].type == KEYWORD && strcmp(tokens[i].value, "def") == 0) {
