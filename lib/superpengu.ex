@@ -2,6 +2,7 @@ defmodule SuperPengu do
   use Bitwise  # IMPORTANTE: Se añade para usar operadores bitwise
   alias AsmComp  # Añadido para usar el módulo AsmComp
   alias PytComp # Añadido para usar el modulo PytComp
+  alias FixNasmSyntax # Añadido para usar el modulo Nasm y que no se compile con errores (Generacion de codigo mas inteligente y coherente)
 
   def main(args) do
     case args do
@@ -27,7 +28,7 @@ defmodule SuperPengu do
       run_plugins()
 
       compiler = detect_compiler(file)
-      output = Path.rootname(file) <> ".out"
+      output = Path.rootname(file) <> ".bin"
 
       args = if arch == "native", do: ["-O3", "-march=native", "-o", output, file], else: ["-O3", "-o", output, file]
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
@@ -47,8 +48,10 @@ defmodule SuperPengu do
     end
   end
 
-  defp generate_asm(file) do
-    if File.exists?(file) do
+  defp generate_asm(files) do
+    files
+    |> Stream.filter(&File.exists?(&1))  # Filtrar los archivos que existen
+    |> Stream.each(fn file ->
       IO.puts("\n\U0001f50c Ejecutando plugins (before)...")
       run_plugins()
 
@@ -60,15 +63,15 @@ defmodule SuperPengu do
           file = Path.rootname(file) <> ".c"  # Ahora el archivo es C
 
         _ ->
-          # Si no es Python, seguimos con el archivo tal cual
           :ok
       end
 
       # Detectar el compilador y preparar los argumentos
-      compiler = detect_compiler(file)
+      compiler = detect_compiler(file)  # Ahora debes usar clang en vez de gcc
       output = Path.rootname(file) <> ".s"  # El archivo de ensamblador tendr� la extensi�n .s
 
-      args = ["-O3", "-S", "-o", output, file]  # Usamos el flag -S para generar ensamblador
+      # Cambiar el comando para generar el c�digo en sintaxis NASM
+      args = ["-O3", "-S", "-o", output, "-target", "x86_64-none-linux-gnu", "-Xclang", "-std=c11", file]  # Agregar opciones para generar NASM
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
 
       IO.puts(result)
@@ -81,10 +84,12 @@ defmodule SuperPengu do
 
       IO.puts("\n\U0001f50c Ejecutando plugins (after)...")
       run_plugins()
-    else
-      IO.puts("\n\u274c Error: El archivo #{file} no existe.")
-    end
+    end)
+    |> Stream.run()  # Esto ejecuta la acci�n de manera perezosa
   end
+
+
+
 
   # Funci�n para convertir c�digo Python a C
   defp python_to_c(file) do
