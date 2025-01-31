@@ -1,16 +1,14 @@
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include "lexer.c"
-#include "parser.c"
+#include "lexer.h"  // Incluir el encabezado de lexer
+#include "parser.h"  // Incluir el encabezado de parser
 
 int main() {
     const char *source_code = "def func(x, y):\n    if x > y:\n        return x";
     
     printf("Tokenizando el c�digo...\n");
-    tokenize(source_code);  
+    tokenize(source_code);  // Tokenizaci�n
     
-    printf("\nParseando los tokens...\n");
     Token tokens[MAX_TOKENS] = {
         {KEYWORD, "def"},
         {IDENTIFIER, "func"},
@@ -22,6 +20,7 @@ int main() {
         {OPERATOR, ":"}
     };
     
+    printf("\nParseando los tokens...\n");
     parse(tokens, 8);  // Parseo
     
     return 0;

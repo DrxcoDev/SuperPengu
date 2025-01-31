@@ -49,11 +49,24 @@ defmodule SuperPengu do
 
   defp generate_asm(file) do
     if File.exists?(file) do
-      IO.puts("\n🔌 Ejecutando plugins (before)...")
+      IO.puts("\n\U0001f50c Ejecutando plugins (before)...")
       run_plugins()
 
+      # Detectamos el tipo de archivo y procesamos en consecuencia
+      case Path.extname(file) do
+        ".py" ->
+          # Si el archivo es Python, lo convertimos a C
+          python_to_c(file)
+          file = Path.rootname(file) <> ".c"  # Ahora el archivo es C
+
+        _ ->
+          # Si no es Python, seguimos con el archivo tal cual
+          :ok
+      end
+
+      # Detectar el compilador y preparar los argumentos
       compiler = detect_compiler(file)
-      output = Path.rootname(file) <> ".s"  # El archivo de ensamblador tendrá la extensión .s
+      output = Path.rootname(file) <> ".s"  # El archivo de ensamblador tendr� la extensi�n .s
 
       args = ["-O3", "-S", "-o", output, file]  # Usamos el flag -S para generar ensamblador
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
@@ -61,17 +74,37 @@ defmodule SuperPengu do
       IO.puts(result)
 
       if status == 0 do
-        IO.puts("\n✅ Código ensamblador generado: #{output}")
+        IO.puts("\n\u2705 C�digo ensamblador generado: #{output}")
       else
-        IO.puts("\n❌ Error generando código ensamblador")
+        IO.puts("\n\u274c Error generando c�digo ensamblador")
       end
 
-      IO.puts("\n🔌 Ejecutando plugins (after)...")
+      IO.puts("\n\U0001f50c Ejecutando plugins (after)...")
       run_plugins()
     else
-      IO.puts("\n❌ Error: El archivo #{file} no existe.")
+      IO.puts("\n\u274c Error: El archivo #{file} no existe.")
     end
   end
+
+  # Funci�n para convertir c�digo Python a C
+  defp python_to_c(file) do
+    IO.puts("\n\U0001f527 Convirtiendo archivo Python a C...")
+
+    # Aqu� usaremos Cython para convertir el c�digo Python en c�digo C.
+    # Aseg�rate de tener Cython instalado o adapta el c�digo seg�n tu entorno.
+
+    _cython_args = ["cython", "--embed", "-o", Path.rootname(file) <> ".c", file]
+    {result, status} = System.cmd("/usr/local/bin/cython", ["cython", "--embed", "-o", "hola.c", "hola.py"], stderr_to_stdout: true)
+
+
+    if status == 0 do
+      IO.puts("\n\u2705 Archivo Python convertido a C exitosamente.")
+    else
+      IO.puts("\n\u274c Error al convertir el archivo Python a C.")
+      IO.puts(result)
+    end
+  end
+
 
   defp compile_asm(file) do
     AsmComp.compile_asm(file)  # Llamamos a la función del módulo AsmComp

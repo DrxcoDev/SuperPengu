@@ -2,27 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-#define MAX_TOKEN_SIZE 100
-
-typedef enum {
-    KEYWORD,
-    IDENTIFIER,
-    INTEGER,
-    OPERATOR,
-    UNKNOWN
-} TokenType;
-
-typedef struct {
-    TokenType type;
-    char value[MAX_TOKEN_SIZE];
-} Token;
-
+#include "lexer.h"  // Incluir el archivo de encabezado
 
 int is_keyword(const char *word) {
     return strcmp(word, "def") == 0 || strcmp(word, "if") == 0 || strcmp(word, "else") == 0;
 }
-
 
 void tokenize(const char *source_code) {
     char current[MAX_TOKEN_SIZE];
@@ -58,10 +42,4 @@ void tokenize(const char *source_code) {
         current[current_length] = '\0';
         printf("Token: %s\n", current);
     }
-}
-
-int main() {
-    const char *source_code = "def func(x, y):\n    if x > y:\n        return x";
-    tokenize(source_code);
-    return 0;
 }
