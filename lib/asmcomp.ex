@@ -1,6 +1,8 @@
 defmodule AsmComp do
   def compile_asm(file) do
     if File.exists?(file) do
+      {config, _binding} = Code.eval_file("env/usr/exported_config.exs")
+      IO.puts("Version de la aplicaci�n: #{config[:version]}")
       IO.puts("\n\U0001f50c Ejecutando plugins (before)...")
       run_plugins()
 

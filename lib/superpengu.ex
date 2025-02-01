@@ -4,7 +4,11 @@ defmodule SuperPengu do
   alias PytComp # Añadido para usar el modulo PytComp
   alias FixNasmSyntax # Añadido para usar el modulo Nasm y que no se compile con errores (Generacion de codigo mas inteligente y coherente)
 
+
   def main(args) do
+
+
+
     case args do
       ["--cross", arch, file] -> compile(file, arch)
       ["--asm", file] -> generate_asm(file)  # Nueva opción para generar código ensamblador
@@ -24,6 +28,8 @@ defmodule SuperPengu do
 
   defp compile(file, arch \\ "native") do
     if File.exists?(file) do
+      {config, _binding} = Code.eval_file("env/usr/exported_config.exs")
+      IO.puts("Version de la aplicaci�n: #{config[:version]}")
       IO.puts("\n🔌 Ejecutando plugins (before)...")
       run_plugins()
 
@@ -52,6 +58,8 @@ defmodule SuperPengu do
     files
     |> Stream.filter(&File.exists?(&1))  # Filtrar los archivos que existen
     |> Stream.each(fn file ->
+      {config, _binding} = Code.eval_file("env/usr/exported_config.exs")
+      IO.puts("Version de la aplicaci�n: #{config[:version]}")
       IO.puts("\n\U0001f50c Ejecutando plugins (before)...")
       run_plugins()
 
