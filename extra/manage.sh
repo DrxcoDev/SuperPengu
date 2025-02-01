@@ -1,14 +1,34 @@
 #!/bin/bash
 
-# Asegurarnos de que Elixir est� instalado y disponible en el PATH
-if ! command -v elixir &> /dev/null
-then
-    echo "Elixir no est� instalado. Inst�lalo para continuar."
+echo "Create a pengu.conf"
+touch env/usr/conf/pengu.conf
+
+# Compilar el programa C++
+echo "Compilando manage.cpp..."
+if g++ -o extra/manager extra/manage.cpp; then
+    echo "Compilaci�n exitosa."
+else
+    echo "Error: Fall� la compilaci�n de manage.cpp."
     exit 1
 fi
 
-# Ejecutar el archivo Elixir que contiene el compilador
-elixir -e manage.exs
+# Verificar si el archivo de configuraci�n existe
+CONFIG_FILE="config.pengu"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: El archivo de configuraci�n '$CONFIG_FILE' no existe."
+    echo "Asegurate de tener SuperPengu instalado desde el inst.sh"
+    exit 1
+fi
 
-# Ahora ejecutar el compilador pas�ndole el archivo .pengu
-elixir -e "CustomCompiler.compile('$1')"
+# Ejecutar el programa compilado
+echo "Ejecutando el programa con el archivo de configuraci�n..."
+extra/manager "$CONFIG_FILE"
+
+# Verificar si la ejecuci�n fue exitosa
+if [ $? -eq 0 ]; then
+    echo "Ejecuci�n completada correctamente."
+else
+    echo "Error: Fall� la ejecuci�n del programa."
+    exit 1
+fi
+

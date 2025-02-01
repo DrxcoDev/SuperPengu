@@ -20,7 +20,7 @@ void processPenguFile(const std::string& filename) {
     std::cout << "Contenido del archivo:\n" << content << "\n";  // Agregado para depuraci�n
 
     // Regex para encontrar el bloque de configuraciones
-    std::regex configBlockRegex(R"(\{(.+?)\})");
+    std::regex configBlockRegex(R"(\{(.+?)\})", std::regex_constants::extended | std::regex_constants::multiline);
     std::smatch configMatch;
 
     if (std::regex_search(content, configMatch, configBlockRegex)) {
@@ -51,7 +51,7 @@ void processPenguFile(const std::string& filename) {
         }
 
         // Abrir el archivo de configuraci�n para escritura
-        std::ofstream outFile("pengu.conf");
+        std::ofstream outFile("env/usr/conf/pengu.conf");
 
         if (!outFile.is_open()) {
             std::cerr << "No se pudo abrir el archivo de salida para escribir." << std::endl;
