@@ -1,0 +1,25 @@
+##############################################
+                                             |
+CHANGES                                      |
+                                             |
+##############################################
+
+VERSION = 1.0.0
+\__
+    \/extra
+        | manage.cpp
+        | manage.sh
+        | manager
+    /lib
+        | asmcomp.ex
+        | configparser.ex
+        | fix_nasm_syntax.ex
+        | pytcom.ex
+        | superpengu.ex #MAIN
+    .formatter
+    .gitignore
+    config.pengu
+    inst.sh
+    README.md
+    superpengu
+    test.c
