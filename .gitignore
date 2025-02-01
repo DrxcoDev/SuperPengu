@@ -29,3 +29,6 @@ superpengu-*.tar
 # Configenvioriment
 
 env/
+
+#extra
+extra/manager
