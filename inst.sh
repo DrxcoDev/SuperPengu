@@ -4,7 +4,7 @@
 install_ubuntu_debian() {
     echo "Installing dependencies on Ubuntu/Debian..."
     sudo apt-get update
-    sudo apt-get install -y clang gcc nasm elixir git
+    sudo apt-get install -y clang gcc nasm elixir git dmd
     git clone https://github.com/DrxcoDev/SuperPengu.git
     cd SuperPengu
     touch config.pengu
@@ -14,7 +14,7 @@ install_ubuntu_debian() {
 # Function to install dependencies on Fedora
 install_fedora() {
     echo "Installing dependencies on Fedora..."
-    sudo dnf install -y clang gcc nasm elixir git
+    sudo dnf install -y clang gcc nasm elixir git dmd
     git clone https://github.com/DrxcoDev/SuperPengu.git
     cd SuperPengu
     touch config.pengu
@@ -25,7 +25,7 @@ install_fedora() {
 install_archlinux() {
     echo "Installing dependencies on Arch Linux..."
     sudo pacman -Syu --noconfirm
-    sudo pacman -S --noconfirm clang gcc nasm elixir git
+    sudo pacman -S --noconfirm clang gcc nasm elixir git dmd
     git clone https://github.com/DrxcoDev/SuperPengu.git
     cd SuperPengu
     touch config.pengu

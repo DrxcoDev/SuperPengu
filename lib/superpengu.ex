@@ -3,6 +3,7 @@ defmodule SuperPengu do
   alias AsmComp
   alias PytComp
   alias FixNasmSyntax
+  alias DComp
 
   def main(args) do
     IO.puts("SuperPengu [UE] ")
@@ -17,6 +18,7 @@ defmodule SuperPengu do
       ["--asm", file] -> generate_asm([file])
       ["--c-", "-a", file] -> compile_asm(file)
       ["--c", "-py", file] -> compile_pyt(file)
+      ["--c", "-d", file] -> compile_d(file)
       [file] -> compile(file, "native", verbose)
       _ ->
         IO.puts("""
@@ -132,6 +134,10 @@ defmodule SuperPengu do
 
   defp compile_pyt(file) do
     PytComp.compile_pyt(file)
+  end
+
+  defp compile_d(file) do
+    DComp.compile_d(file)
   end
 
   defp detect_compiler(file) do
