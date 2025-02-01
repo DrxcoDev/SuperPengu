@@ -25,3 +25,7 @@ superpengu-*.tar
 .out
 
 .lock
+
+# Configenvioriment
+
+env/
