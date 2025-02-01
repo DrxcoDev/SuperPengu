@@ -4,6 +4,8 @@ CHANGES                                      |
                                              |
 ##############################################
 
+# Changes focus in the directory [default] 1st change on version 1.0.0. Inspect on #MAIN 
+
 VERSION = 1.0.0
 \__
     \/extra
