@@ -1,85 +1,101 @@
 defmodule SuperPengu do
-  use Bitwise  # IMPORTANTE: Se añade para usar operadores bitwise
-  alias AsmComp  # Añadido para usar el módulo AsmComp
-  alias PytComp # Añadido para usar el modulo PytComp
-  alias FixNasmSyntax # Añadido para usar el modulo Nasm y que no se compile con errores (Generacion de codigo mas inteligente y coherente)
-
+  use Bitwise
+  alias AsmComp
+  alias PytComp
+  alias FixNasmSyntax
 
   def main(args) do
+    IO.puts("SuperPengu [UE] ")
+    {verbose, cleaned_args} = extract_verbose(args)
 
+    if verbose do
+      IO.puts("Verbose activado")
+    end
 
-
-    case args do
-      ["--cross", arch, file] -> compile(file, arch)
-      ["--asm", file] -> generate_asm(file)  # Nueva opción para generar código ensamblador
-      ["--c-", "-a", file] -> compile_asm(file)  # Nueva opción para compilar ensamblador
+    case cleaned_args do
+      ["--cross", arch, file] -> compile(file, arch, verbose)
+      ["--asm", file] -> generate_asm([file])
+      ["--c-", "-a", file] -> compile_asm(file)
       ["--c", "-py", file] -> compile_pyt(file)
-      [file] -> compile(file)
+      [file] -> compile(file, "native", verbose)
       _ ->
         IO.puts("""
-        ❌ Uso incorrecto. Usa:
-          ./superpengu archivo.c      # Compila un archivo normal
+        \u274c Uso incorrecto. Usa:
+          ./superpengu archivo.c                 # Compila un archivo normal
           ./superpengu --cross x86_64 archivo.c  # Compila en modo cruzado
-          ./superpengu --asm archivo.c  # Genera código ensamblador
-          ./superpengu --compile-asm archivo.s  # Compila código ensamblador
+          ./superpengu --asm archivo.c           # Genera c�digo ensamblador
+          ./superpengu --c- -a archivo.s         # Compila c�digo ensamblador
+          ./superpengu --c -py archivo.py        # Compila c�digo Python
         """)
     end
   end
 
-  defp compile(file, arch \\ "native") do
+  defp extract_verbose(args) do
+    verbose = "--verbose" in args
+    {verbose, List.delete(args, "--verbose")}
+  end
+
+  defp compile(file, arch \\ "native", verbose \\ false) do
     if File.exists?(file) do
       {config, _binding} = Code.eval_file("env/usr/exported_config.exs")
-      IO.puts("Version de la aplicaci�n: #{config[:version]}")
-      IO.puts("\n🔌 Ejecutando plugins (before)...")
+      IO.puts("Versi�n de la aplicaci�n: #{config[:version]}")
+      IO.puts("\n\U0001f50c Ejecutando plugins (before)...")
       run_plugins()
 
       compiler = detect_compiler(file)
       output = Path.rootname(file) <> ".bin"
 
-      args = if arch == "native", do: ["-O3", "-march=native", "-o", output, file], else: ["-O3", "-o", output, file]
+      args =
+        case arch do
+          "native" -> ["-O3", "-march=native", "-o", output, file]
+          "x86_64" -> ["-O3", "-target", "x86_64-linux-gnu", "-o", output, file]
+          "arm64" -> ["-O3", "-target", "aarch64-linux-gnu", "-o", output, file]
+          "riscv64" -> ["-O3", "-target", "riscv64-linux-gnu", "-o", output, file]
+          _ -> ["-O3", "-o", output, file]
+        end
+
+      if verbose do
+        IO.puts("Compilador detectado: #{compiler}")
+        IO.puts("Iniciando: #{compiler} #{Enum.join(args, " ")}")
+      end
+
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
 
       IO.puts(result)
 
       if status == 0 do
-        IO.puts("\n✅ Compilación exitosa: #{output}")
+        IO.puts("\n\u2705 Compilaci�n exitosa: #{output}")
       else
-        IO.puts("\n❌ Error en la compilación")
+        IO.puts("\n\u274c Error en la compilaci�n")
       end
 
-      IO.puts("\n🔌 Ejecutando plugins (after)...")
+      if verbose, do: IO.puts("\n\U0001f50c Ejecutando plugins (after)...")
       run_plugins()
     else
-      IO.puts("\n❌ Error: El archivo #{file} no existe.")
+      IO.puts("\n\u274c Error: El archivo #{file} no existe.")
     end
   end
 
   defp generate_asm(files) do
     files
-    |> Stream.filter(&File.exists?(&1))  # Filtrar los archivos que existen
+    |> Stream.filter(&File.exists?/1)
     |> Stream.each(fn file ->
       {config, _binding} = Code.eval_file("env/usr/exported_config.exs")
-      IO.puts("Version de la aplicaci�n: #{config[:version]}")
+      IO.puts("Versi�n de la aplicaci�n: #{config[:version]}")
       IO.puts("\n\U0001f50c Ejecutando plugins (before)...")
       run_plugins()
 
-      # Detectamos el tipo de archivo y procesamos en consecuencia
       case Path.extname(file) do
         ".py" ->
-          # Si el archivo es Python, lo convertimos a C
           python_to_c(file)
-          file = Path.rootname(file) <> ".c"  # Ahora el archivo es C
-
-        _ ->
-          :ok
+          file = Path.rootname(file) <> ".c"
+        _ -> :ok
       end
 
-      # Detectar el compilador y preparar los argumentos
-      compiler = detect_compiler(file)  # Ahora debes usar clang en vez de gcc
-      output = Path.rootname(file) <> ".s"  # El archivo de ensamblador tendr� la extensi�n .s
+      compiler = detect_compiler(file)
+      output = Path.rootname(file) <> ".s"
 
-      # Cambiar el comando para generar el c�digo en sintaxis NASM
-      args = ["-O3", "-S", "-o", output, "-target", "x86_64-none-linux-gnu", "-Xclang", "-std=c11", file]  # Agregar opciones para generar NASM
+      args = ["-O3", "-S", "-o", output, "-target", "x86_64-none-linux-gnu", "-Xclang", "-std=c11", file]
       {result, status} = System.cmd(compiler, args, stderr_to_stdout: true)
 
       IO.puts(result)
@@ -93,22 +109,14 @@ defmodule SuperPengu do
       IO.puts("\n\U0001f50c Ejecutando plugins (after)...")
       run_plugins()
     end)
-    |> Stream.run()  # Esto ejecuta la acci�n de manera perezosa
+    |> Stream.run()
   end
 
-
-
-
-  # Funci�n para convertir c�digo Python a C
   defp python_to_c(file) do
     IO.puts("\n\U0001f527 Convirtiendo archivo Python a C...")
 
-    # Aqu� usaremos Cython para convertir el c�digo Python en c�digo C.
-    # Aseg�rate de tener Cython instalado o adapta el c�digo seg�n tu entorno.
-
-    _cython_args = ["cython", "--embed", "-o", Path.rootname(file) <> ".c", file]
-    {result, status} = System.cmd("/usr/local/bin/cython", ["cython", "--embed", "-o", "hola.c", "hola.py"], stderr_to_stdout: true)
-
+    output_c = Path.rootname(file) <> ".c"
+    {result, status} = System.cmd("cython", ["--embed", "-o", output_c, file], stderr_to_stdout: true)
 
     if status == 0 do
       IO.puts("\n\u2705 Archivo Python convertido a C exitosamente.")
@@ -118,20 +126,20 @@ defmodule SuperPengu do
     end
   end
 
-
   defp compile_asm(file) do
-    AsmComp.compile_asm(file)  # Llamamos a la función del módulo AsmComp
+    AsmComp.compile_asm(file)
   end
+
   defp compile_pyt(file) do
-    PytComp.compile_pyt(file)  # Llamamos a la función del módulo AsmComp
+    PytComp.compile_pyt(file)
   end
 
   defp detect_compiler(file) do
-    case Path.extname(file) do
-      ".c" -> "gcc"
-      ".cpp" -> "g++"
-      ".lgx" -> "./compilers/lgx_compiler"  # Llamaría a tu compilador de LGX
-      _ -> "gcc"
+    compilers = ["clang", "gcc", "g++", "nasm"]
+
+    case Enum.find(compilers, &System.find_executable/1) do
+      nil -> raise "No se encontr� un compilador v�lido"
+      compiler -> compiler
     end
   end
 
@@ -141,7 +149,7 @@ defmodule SuperPengu do
     if File.exists?(plugins_path) do
       plugins = File.ls!(plugins_path)
       |> Enum.filter(fn file ->
-        case File.stat(plugins_path <> file) do
+        case File.stat(Path.join(plugins_path, file)) do
           {:ok, %File.Stat{mode: mode}} -> Bitwise.band(mode, 0o111) != 0
           _ -> false
         end
@@ -151,17 +159,17 @@ defmodule SuperPengu do
         path = Path.join(plugins_path, plugin)
 
         if File.exists?(path) do
-          IO.puts("🔹 Ejecutando #{plugin}...")
+          IO.puts("\U0001f539 Ejecutando #{plugin}...")
           {result, status} = System.cmd(path, [], stderr_to_stdout: true)
 
           IO.puts(result)
-          if status != 0, do: IO.puts("⚠️ Advertencia: #{plugin} terminó con errores.")
+          if status != 0, do: IO.puts("\u26a0\ufe0f Advertencia: #{plugin} termin� con errores.")
         else
-          IO.puts("⚠️ Plugin no encontrado: #{plugin}")
+          IO.puts("\u26a0\ufe0f Plugin no encontrado: #{plugin}")
         end
       end)
     else
-      IO.puts("⚠️ No se encontró la carpeta de plugins.")
+      IO.puts("\u26a0\ufe0f No se encontr� la carpeta de plugins.")
     end
   end
 end
