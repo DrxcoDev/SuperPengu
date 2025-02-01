@@ -5,14 +5,16 @@ install_ubuntu_debian() {
     echo "Installing dependencies on Ubuntu/Debian..."
     sudo apt-get update
     sudo apt-get install -y clang gcc nasm elixir
-    touch .pengu
+    touch config.pengu
+    mkdir env/usr/conf
 }
 
 # Function to install dependencies on Fedora
 install_fedora() {
     echo "Installing dependencies on Fedora..."
     sudo dnf install -y clang gcc nasm elixir
-    touch .pengu
+    touch config.pengu
+    mkdir env/usr/conf
 }
 
 # Function to install dependencies on Arch Linux
@@ -20,7 +22,8 @@ install_archlinux() {
     echo "Installing dependencies on Arch Linux..."
     sudo pacman -Syu --noconfirm
     sudo pacman -S --noconfirm clang gcc nasm elixir
-    touch .pengu
+    touch config.pengu
+    mkdir env/usr/conf
 }
 
 # Detect the distribution
