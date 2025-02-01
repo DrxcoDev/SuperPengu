@@ -1,0 +1,6 @@
+/++ Pengu TM ++\
+configurations: {
+    version = version_app;
+    language = "C++";
+}
+\++
